@@ -1,8 +1,10 @@
-# ONLYOFFICE Desktop Editors: corrector ortográfico para Español (Argentina)
+# ONLYOFFICE Desktop Editors: Autocorrector ortográfico automático para Español (en todas sus variantes)
 
-Parche para que el corrector ortográfico automático de **ONLYOFFICE Desktop Editors (Windows)** funcione con el idioma **Español (Argentina)**.
+Parche para que el Autocorrector ortográfico automático de **ONLYOFFICE Desktop Editors (Windows)** funcione con el idioma **Español (en todas sus variantes)**.
 
-Sin este parche, al elegir «Español (Argentina)» el idioma aparece sin la marca **A** (corrector no disponible) y no se subraya ninguna palabra incorrecta, mientras que con «Español (España)» sí funciona.
+Sin este parche, por ejemplo al elegir «Español (Argentina)» o «Español (Uruguay)» o cualquier variante, el idioma aparece sin la marca **A** (corrector no disponible) y no se subraya ninguna palabra incorrecta, mientras que con «Español (España)» sí funciona. Y tambien existe el problema de que en caso de marcar todo el texto con un nuevo idioma al escribir nuevo texto se cambia y no respeta el idioma elegido.
+
+Al usar el diccionario de Autocorrección Español (España) para todas las variantes se soluciona el problema y se pueden agregar manualmente palabras en sus respectivas variantes locales.
 
 > Probado en ONLYOFFICE Desktop Editors **10.0.0.169** sobre Windows. En otras versiones puede funcionar o no: el script se detiene sin modificar nada si no reconoce el código que espera.
 
@@ -10,20 +12,20 @@ Sin este parche, al elegir «Español (Argentina)» el idioma aparece sin la mar
 
 | Archivo | Qué hace |
 |---|---|
-| `onlyoffice_es_AR_v3.bat` | Aplica el parche. |
+| `onlyoffice_es_v4.bat` | Aplica el parche. |
 | `onlyoffice_es_AR_revertir.bat` | Deshace el parche y restaura los archivos originales. |
 
 ## Uso
 
 1. **Cerrá ONLYOFFICE.** El script también intenta cerrarlo.
-2. Ejecutá `onlyoffice_es_AR_v3.bat` con doble clic. Pide permisos de administrador porque modifica archivos dentro de `Program Files`.
-3. Abrí ONLYOFFICE, elegí «Español (Argentina)» como idioma del texto y escribí una palabra mal para comprobarlo.
+2. Ejecutá `onlyoffice_es_v4.bat` con doble clic. Pide permisos de administrador porque modifica archivos dentro de `Program Files`.
+3. Abrí ONLYOFFICE, elegí por ejemplo «Español (Argentina)» u otra variante como idioma del texto y escribí una palabra mal para comprobarlo.
 4. Si hace falta, activá el corrector en *Archivo → Configuración avanzada*.
 
 Si ONLYOFFICE no está en una ruta habitual (`Program Files`, `Program Files (x86)` o `%LOCALAPPDATA%\Programs`), pasá la carpeta como argumento:
 
 ```bat
-onlyoffice_es_AR_v3.bat "D:\Apps\ONLYOFFICE\DesktopEditors"
+onlyoffice_es_v4.bat "D:\Apps\ONLYOFFICE\DesktopEditors"
 ```
 
 ### Revertir
@@ -32,19 +34,9 @@ Ejecutá `onlyoffice_es_AR_revertir.bat`. Restaura cada `sdk-all-min.js` desde s
 
 ### Después de actualizar ONLYOFFICE
 
-Las actualizaciones reemplazan los archivos del SDK y el parche se pierde. Volvé a ejecutar `onlyoffice_es_AR_v3.bat`.
+Las actualizaciones reemplazan los archivos del SDK y el parche se pierde. Volvé a ejecutar `onlyoffice_es_v4.bat`.
 
-## Por qué ocurre
-
-En la versión de escritorio, el corrector no lo hace el código JavaScript del editor sino un **motor nativo compilado dentro del programa**. Ese motor trae una tabla fija que une cada código de idioma de Windows con una carpeta de `dictionaries/`. Para español tiene una sola entrada: `es_ES` con el código `3082` (España). No existe una entrada para `11274` (Argentina).
-
-Por eso fallan los intentos habituales:
-
-- Copiar `es_ES` como `es_AR` no sirve: el motor nunca busca esa carpeta.
-- Crear un `es_AR.json` con el código `11274` tampoco: esos `.json` solo los lee `generate.py` cuando ONLYOFFICE compila el programa, no en tiempo de ejecución.
-- Agregar `11274` a `spellcheckGetLanguages()` en el SDK solo hace aparecer la marca **A**, pero el motor sigue sin reconocer el código.
-
-Código fuente relacionado:
+## Código fuente relacionado: 
 
 - [`desktop-sdk/ChromiumBasedEditors/lib/src/spellchecker.cpp`](https://github.com/ONLYOFFICE/desktop-sdk/blob/master/ChromiumBasedEditors/lib/src/spellchecker.cpp): `SetLanguage()` y `Init()`.
 - [`core/Common/3dParty/hunspell/autogen/`](https://github.com/ONLYOFFICE/core/tree/master/Common/3dParty/hunspell/autogen): `generate.py` y `records.h`.
@@ -53,8 +45,8 @@ Código fuente relacionado:
 
 No toca ningún `.exe` ni `.dll`. Modifica únicamente los archivos `editors/sdkjs/*/sdk-all-min.js` (word, cell, slide y los demás que encuentre) en dos puntos:
 
-1. **Tabla de idiomas con corrector.** Agrega `11274:{hyphen:!0,name:"es_ES"}` a `spellcheckGetLanguages()`, para que «Español (Argentina)» figure con corrector (la **A**).
-2. **Pedido al motor nativo.** En la llamada `AscDesktopEditor.SpellCheck(JSON.stringify(...))`, reemplaza `11274` por `3082` solo dentro de la lista `"usrLang"`. El motor corrige entonces con el diccionario `es_ES` que ya viene instalado.
+1. **Tabla de idiomas con corrector.** Por ejemplo agrega `11274 y :{hyphen:!0,name:"es_ES"}` a `spellcheckGetLanguages()`, para que «Español (Argentina)» figure con corrector (la **A**). Lo hace para todas las variantes de español y sus respectivos códigos. 
+2. **Pedido al motor nativo.** En la llamada `AscDesktopEditor.SpellCheck(JSON.stringify(...))`, por ejemplo reemplaza `11274` por `3082` solo dentro de la lista `"usrLang"`. El motor corrige entonces con el diccionario `es_ES` que ya viene instalado. Lo hace para todas las variantes de español y sus respectivos códigos. 
 
 Detalles de seguridad del script:
 
@@ -72,9 +64,9 @@ Detalles de seguridad del script:
 
 ## Limitaciones
 
-- El corrector usa el diccionario de **español de España**. Marcará como error el voseo («tenés», «querés»).
+- El corrector usa el diccionario de **español de España**.
 - Es una modificación de archivos de la instalación, no una función oficial de ONLYOFFICE.
-- Si una versión futura trae el soporte de es-AR de serie, este parche deja de ser necesario. En ese caso, ejecutá el BAT de revertir.
+- Si una versión futura trae el soporte de para las variantes en español de serie, este parche deja de ser necesario. En ese caso, ejecutá el BAT de revertir.
 - Si ONLYOFFICE cambia el texto de su SDK, el script lo avisa y no modifica nada. Abrí un *issue* con el mensaje que muestra.
 
 ## Aviso
